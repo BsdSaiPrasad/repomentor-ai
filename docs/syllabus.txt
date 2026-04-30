@@ -1,0 +1,68 @@
+CMSC 389A: Modern Software Development with GenAI
+Fall 2026
+Professor: Anwar Mamat (anwar@umd.edu)
+Credits: 3
+Prerequisites: C or better in CMSC216 and CMSC250
+Meeting Times: Tuesdays & Thursdays, 12:30-1:45pm, CSI 1121
+Duration: August 31 - December 21
+
+COURSE OVERVIEW
+This course prepares students to leverage AI throughout the software development lifecycle. Students will master two critical skills: using AI to supercharge productivity and engineering the next generation of AI-powered software.
+
+LEARNING OUTCOMES
+- Apply advanced prompting techniques (k-shot, chain-of-thought, RAG, tool calling)
+- Use AI coding assistants for code generation, refactoring, and debugging
+- Build and deploy full-stack web applications with modern frameworks
+- Implement modular design patterns and object-oriented principles
+- Write and evaluate unit, integration, and regression tests
+- Use Git for version control and collaborative workflows
+- Conduct code reviews and evaluate AI review tools
+- Apply UI/UX design principles with AI assistance
+- Identify and remediate security vulnerabilities
+- Build autonomous coding agents and multi-agent systems
+- Deploy applications using Docker and CI/CD pipelines
+- Critically assess AI-generated code and understand responsible use
+
+COURSE TOPICS
+- Foundations and GenAI landscape
+- Version control (Git/GitHub)
+- Prompt engineering techniques
+- Web frameworks (FastAPI, Flask, Streamlit)
+- Testing, TDD, and coverage analysis
+- Databases (SQL, BigQuery, PostgreSQL)
+- Software architecture and design patterns
+- Autonomous agents and Model Context Protocol
+- Code review processes
+- Security analysis and vulnerability remediation
+- Cloud deployment and CI/CD
+- Ethical considerations in AI development
+
+WEEKLY SCHEDULE
+
+Module 1: Foundations
+Week 1 (08/31-09/02): Introduction to Software Engineering & GenAI; Development Environment Setup; Full-Stack Architecture; Cloud Shell; LLM Concepts
+Week 2 (09/07-09/09): Version Control with Git/GitHub; Advanced Git techniques; GitHub Workflows — Team Foundations Assignment Released
+Week 3 (09/14-09/16): Prompt Engineering techniques; Advanced Prompting and Local Models — Prompt Engineering Assignment Released
+
+Module 2: Building Software with AI
+Week 4 (09/21-09/23): AI-Assisted Development Workflows; Web Frameworks; Rapid Prototyping — Streamlit App Assignment Released
+Week 5 (09/28-09/30): Unit Testing with pytest/doctest; Test-Driven Development; AI-Generated Tests — Testing Assignment Released
+Week 6 (10/05-10/07): Relational Databases; SQL; Database Integration; Embeddings & Vector Search
+
+Module 3: Design & Architecture
+Week 7 (10/12-10/14): UI/UX Design principles; AI-Assisted Prototyping — Feature Planning Assignment Released
+Week 8 (10/19-10/21): Software Architecture; Design Patterns; Modular Design — Architecture Assignment Released
+
+Module 4: Advanced AI Tooling
+Week 9 (10/26-10/28): Autonomous Coding Agents; Model Context Protocol — MCP Server Assignment Released
+Week 10 (11/02-11/04): Multi-Agent Development; Concurrent Workflows — Multi-Agent Assignment Released
+Week 11 (11/09-11/11): AI-Powered Code Review; PR Automation — Code Review Assignment Released
+
+Module 5: Security, Deployment & Multi-Stack
+Week 12 (11/16-11/18): Application Security; Prompt Injection Threats — Security Scanning Assignment Released
+Week 13 (11/23-11/25): Docker; CI/CD Pipelines; Thanksgiving Break (no class 11/25)
+
+Module 6: Final Project & Future
+Week 14 (11/30-12/02): Cloud Deployment; Monitoring; Final Project Integration begins
+Week 15 (12/07-12/09): Industry Trends; Ethics & Safety; Demo Day — Final Project Due
+Final project assessment: December 21
