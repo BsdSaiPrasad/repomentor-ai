@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Environment variables (never push API keys)
+.env
+
+# Database
+*.db
+*.sqlite
+
+# OS files
+.DS_Store
+
+# Test coverage reports
+.coverage
+htmlcov/
+
+# Chroma vector database (local only)
+chroma_db/
