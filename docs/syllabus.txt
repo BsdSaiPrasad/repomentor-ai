@@ -66,3 +66,16 @@ Module 6: Final Project & Future
 Week 14 (11/30-12/02): Cloud Deployment; Monitoring; Final Project Integration begins
 Week 15 (12/07-12/09): Industry Trends; Ethics & Safety; Demo Day — Final Project Due
 Final project assessment: December 21
+
+ASSIGNMENTS SUMMARY (10 total assignments):
+1. Team Foundations Assignment (Week 2)
+2. Prompt Engineering Assignment (Week 3)
+3. Streamlit App Assignment (Week 4)
+4. Testing Assignment (Week 5)
+5. Feature Planning Assignment (Week 7)
+6. Architecture Assignment (Week 8)
+7. MCP Server Assignment (Week 9)
+8. Multi-Agent Assignment (Week 10)
+9. Code Review Assignment (Week 11)
+10. Security Scanning Assignment (Week 12)
+Final Project (Week 15, due December 21)
