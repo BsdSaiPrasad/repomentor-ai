@@ -5,6 +5,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.services.course_assistant import ask_course_assistant
+from backend.services.assignment_generator import generate_assignment
 
 st.set_page_config(
     page_title="RepoMentor AI",
@@ -43,7 +44,75 @@ with tab1:
 
 with tab2:
     st.header("📝 Assignment Builder")
-    st.info("🚧 Coming soon — Generate assignments, rubrics, and starter code")
+    st.write("Generate syllabus-aligned assignments and rubrics using AI.")
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        week = st.number_input("Week", min_value=1, max_value=15, value=3)
+    with col2:
+        topic = st.text_input("Topic", placeholder="Prompt Engineering")
+    with col3:
+        difficulty = st.selectbox("Difficulty", ["Beginner", "Intermediate", "Advanced"])
+
+    if st.button("Generate Assignment"):
+        if topic:
+            with st.spinner("Step 1: Retrieving syllabus context..."):
+                pass
+            with st.spinner("Step 2: Generating draft → critiquing → revising..."):
+                result = generate_assignment(topic, week, difficulty)
+
+            st.success("Assignment generated successfully!")
+
+            st.markdown("---")
+            st.subheader("📋 Final Assignment")
+            st.markdown(result["final"])
+
+            st.markdown("---")
+            st.subheader("📊 Grading Rubric")
+            st.markdown(result["rubric"])
+
+            st.markdown("---")
+
+            st.markdown("---")
+            st.subheader("💻 Starter Code")
+            st.code(result["starter_code"], language="python")
+
+            st.markdown("---")
+
+            # Download button
+            download_content = f"""# Assignment: {topic} (Week {week})
+Difficulty: {difficulty}
+
+## Assignment
+{result["final"]}
+
+## Grading Rubric
+{result["rubric"]}
+
+## Starter Code
+```python
+{result["starter_code"]}
+```
+"""
+            st.download_button(
+                label="⬇️ Download Assignment as Markdown",
+                data=download_content,
+                file_name=f"week{week}_{topic.replace(' ', '_')}_assignment.md",
+                mime="text/markdown"
+            )
+
+            st.markdown("---")
+            with st.expander("🔍 View AI Reflection Process (Draft → Critique → Final)"):
+                st.markdown("**📝 Original Draft:**")
+                st.markdown(result["draft"])
+                st.markdown("---")
+                st.markdown("**🔎 Professor Critique:**")
+                st.warning(result["critique"])
+                st.markdown("---")
+                st.markdown("**📚 Syllabus Context Used:**")
+                st.info(result["syllabus_context"])
+        else:
+            st.warning("Please enter a topic.")
 
 with tab3:
     st.header("🔍 Repo Reviewer")
