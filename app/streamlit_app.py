@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.services.course_assistant import ask_course_assistant
 from backend.services.assignment_generator import generate_assignment
+from backend.services.repo_analyzer import analyze_repo
 
 st.set_page_config(
     page_title="RepoMentor AI",
@@ -116,7 +117,95 @@ Difficulty: {difficulty}
 
 with tab3:
     st.header("🔍 Repo Reviewer")
-    st.info("🚧 Coming soon — Multi-agent GitHub repo review")
+    st.write("Paste a local repo path or select a sample repo to analyze.")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        repo_path = st.text_input("Repo Path", placeholder="sample_repos/good_student")
+    with col2:
+        sample = st.selectbox("Or pick a sample repo", [
+            "-- select --",
+            "sample_repos/good_student",
+            "sample_repos/average_student",
+            "sample_repos/bad_student"
+        ])
+
+    if sample != "-- select --":
+        repo_path = sample
+
+    if st.button("Analyze Repo"):
+        if repo_path:
+            st.markdown("---")
+            st.subheader("🤖 Agent Status")
+
+            # Create live status placeholders for each agent
+            agent_names = ["Code Review Agent", "Security Agent", "Documentation Agent"]
+            placeholders = {}
+            cols_status = st.columns(3)
+            for i, name in enumerate(agent_names):
+                with cols_status[i]:
+                    placeholders[name] = st.empty()
+                    placeholders[name].info(f"🔄 **{name}**\nStatus: Running...")
+
+            # Callback updates the placeholder when each agent finishes
+            def on_agent_done(name, score, duration):
+                color = "🟢" if score >= 75 else "🟡" if score >= 50 else "🔴"
+                placeholders[name].success(f"{color} **{name}**\nScore: {score}/100 — {duration}s")
+
+            try:
+                report = analyze_repo(repo_path, status_callback=on_agent_done)
+            except ValueError as e:
+                st.error(f"❌ {str(e)}")
+                st.stop()
+
+            st.success(f"✅ Analysis complete! Overall Score: {report['overall_score']}/100 — {report['grade']}")
+
+            st.markdown("---")
+            st.subheader("📊 Agent Breakdown")
+            cols = st.columns(len(report["breakdown"]))
+            for i, agent in enumerate(report["breakdown"]):
+                with cols[i]:
+                    duration = agent.get("duration", 0)
+                    st.metric(label=agent["agent"], value=f"{agent['score']}/100", delta=f"{duration}s")
+                    st.caption(agent["summary"])
+
+            st.markdown("---")
+            st.subheader("⚠️ All Issues Found")
+            if report["all_issues"]:
+                security_issues = [i for i in report["all_issues"] if "Security" in i]
+                code_issues = [i for i in report["all_issues"] if "Code" in i]
+                doc_issues = [i for i in report["all_issues"] if "Documentation" in i]
+
+                if security_issues:
+                    st.markdown("🔴 **Security Issues**")
+                    for issue in security_issues:
+                        st.error(f"🔒 {issue.replace('[Security Agent]', '').strip()}")
+
+                if code_issues:
+                    st.markdown("🟡 **Code Quality Issues**")
+                    for issue in code_issues:
+                        st.warning(f"⚠️ {issue.replace('[Code Review Agent]', '').strip()}")
+
+                if doc_issues:
+                    st.markdown("🔵 **Documentation Issues**")
+                    for issue in doc_issues:
+                        st.info(f"📄 {issue.replace('[Documentation Agent]', '').strip()}")
+            else:
+                st.success("✅ No issues found — excellent repo!")
+
+            st.markdown("---")
+            with st.expander("🔍 Detailed Agent Reports"):
+                for agent in report["breakdown"]:
+                    score = agent["score"]
+                    color = "🟢" if score >= 75 else "🟡" if score >= 50 else "🔴"
+                    st.markdown(f"{color} **{agent['agent']}** — Score: {agent['score']}/100")
+                    st.write(agent["summary"])
+                    if agent["issues"]:
+                        for issue in agent["issues"]:
+                            st.markdown(f"- {issue}")
+                    st.markdown("---")
+        else:
+            st.warning("Please enter a repo path or select a sample repo.")
 
 with tab4:
     st.header("📊 Analytics Dashboard")
