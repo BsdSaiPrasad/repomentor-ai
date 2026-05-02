@@ -8,6 +8,7 @@ from backend.agents.code_review_agent import CodeReviewAgent
 from backend.agents.security_agent import SecurityAgent
 from backend.agents.documentation_agent import DocumentationAgent
 from backend.agents.synthesizer_agent import SynthesizerAgent
+from backend.db.connection import save_review
 
 async def run_agent_async(agent, repo_path: str, status_callback=None):
     """
@@ -80,5 +81,10 @@ def analyze_repo(repo_path: str, status_callback=None) -> dict:
     finally:
         if tmp_dir:
             shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    try:
+        save_review(repo_path, result["overall_score"], result["grade"], result["breakdown"])
+    except Exception as e:
+        print(f"[DB] Could not save review: {e}")
 
     return result
