@@ -7,6 +7,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend.services.course_assistant import ask_course_assistant
 from backend.services.assignment_generator import generate_assignment
 from backend.services.repo_analyzer import analyze_repo
+from backend.db.connection import get_connection as get_db_connection
+from sqlalchemy import text
 
 st.set_page_config(
     page_title="RepoMentor AI",
@@ -209,7 +211,67 @@ with tab3:
 
 with tab4:
     st.header("📊 Analytics Dashboard")
-    st.info("🚧 Coming soon — BigQuery-powered student performance analytics")
+
+    try:
+        with get_db_connection() as conn:
+            reviews = conn.execute(text("SELECT repo_path, overall_score, grade, created_at FROM repo_reviews ORDER BY created_at DESC")).fetchall()
+
+        if not reviews:
+            st.info("No reviews yet. Analyze a repo first to see analytics here.")
+        else:
+            scores = [r[1] for r in reviews]
+            total = len(reviews)
+            avg_score = round(sum(scores) / total, 1)
+            best = max(scores)
+            worst = min(scores)
+
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Total Reviews", total)
+            col2.metric("Average Score", avg_score)
+            col3.metric("Best Score", best)
+            col4.metric("Worst Score", worst)
+
+            st.markdown("---")
+
+            import plotly.graph_objects as go
+
+            labels = [f"{r[0].split('/')[-1]} ({str(r[3])[:10]})" for r in reviews]
+            values = [r[1] for r in reviews]
+            colors = ["#2ecc71" if v >= 75 else "#f39c12" if v >= 60 else "#e74c3c" for v in values]
+
+            fig = go.Figure(go.Bar(x=labels, y=values, marker_color=colors))
+            fig.update_layout(
+                title="Score per Repo Review",
+                xaxis_title="Repo",
+                yaxis_title="Score",
+                yaxis=dict(range=[0, 100]),
+                height=400
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            st.markdown("---")
+
+            st.subheader("📋 Grade Distribution")
+            grade_counts = {}
+            for r in reviews:
+                grade_counts[r[2]] = grade_counts.get(r[2], 0) + 1
+
+            gcol1, gcol2, gcol3, gcol4 = st.columns(4)
+            gcol1.metric("🟢 Excellent", grade_counts.get("Excellent", 0))
+            gcol2.metric("🟡 Good", grade_counts.get("Good", 0))
+            gcol3.metric("🟠 Needs Improvement", grade_counts.get("Needs Improvement", 0))
+            gcol4.metric("🔴 Poor", grade_counts.get("Poor", 0))
+
+            st.markdown("---")
+
+            st.subheader("🕓 Recent Reviews")
+            for r in reviews[:10]:
+                score = r[1]
+                color = "🟢" if score >= 75 else "🟡" if score >= 60 else "🔴"
+                st.write(f"{color} **{r[0]}** — Score: {score} — Grade: {r[2]} — {str(r[3])[:16]}")
+
+    except Exception as e:
+        st.error(f"Could not load analytics: {e}")
 
 with tab5:
     st.header("⚖️ AI Ethics & Limitations")
