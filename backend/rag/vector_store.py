@@ -1,6 +1,9 @@
 import chromadb
+import os
 
-client = chromadb.PersistentClient(path="./chroma_db")
+CHROMA_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "chroma_db")
+
+client = chromadb.PersistentClient(path=CHROMA_PATH)
 
 def get_collection():
     """Get or create the syllabus collection in ChromaDB."""
