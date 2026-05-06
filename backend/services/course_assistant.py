@@ -7,6 +7,7 @@ load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+
 def ask_course_assistant(question: str) -> dict:
     chunks = retrieve(question, k=10)
     context = "\n\n".join(chunks)

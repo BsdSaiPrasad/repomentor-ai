@@ -24,7 +24,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📝 Assignment Builder",
     "🔍 Repo Reviewer",
     "📊 Analytics Dashboard",
-    "⚖️ AI Ethics & Limitations"
+    "🤖 AutoDev Agent"
 ])
 
 with tab1:
@@ -49,42 +49,43 @@ with tab2:
     st.header("📝 Assignment Builder")
     st.write("Generate syllabus-aligned assignments and rubrics using AI.")
 
+    if "assignment_topic" not in st.session_state:
+        st.session_state.assignment_topic = ""
+    if "assignment_format" not in st.session_state:
+        st.session_state.assignment_format = "Lab"
+
+    st.caption("Create a polished assignment pack with a brief, rubric, starter code, and review trace.")
+
     col1, col2, col3 = st.columns(3)
     with col1:
         week = st.number_input("Week", min_value=1, max_value=15, value=3)
     with col2:
-        topic = st.text_input("Topic", placeholder="Prompt Engineering")
+        topic = st.text_input("Topic", placeholder="Prompt Engineering", key="assignment_topic")
     with col3:
         difficulty = st.selectbox("Difficulty", ["Beginner", "Intermediate", "Advanced"])
+
+    assignment_format = st.selectbox(
+        "Assignment Format",
+        ["Lab", "Mini Project", "Notebook", "Code Review", "Build-and-Explain"],
+        key="assignment_format"
+    )
 
     if st.button("Generate Assignment"):
         if topic:
             with st.spinner("Step 1: Retrieving syllabus context..."):
                 pass
             with st.spinner("Step 2: Generating draft → critiquing → revising..."):
-                result = generate_assignment(topic, week, difficulty)
+                result = generate_assignment(topic, week, difficulty, assignment_format)
 
-            st.success("Assignment generated successfully!")
+            st.success("Assignment pack generated successfully.")
+            st.caption(
+                f"Week {result['week']} | {result['topic']} | "
+                f"{result['difficulty']} | {result['assignment_format']}"
+            )
 
-            st.markdown("---")
-            st.subheader("📋 Final Assignment")
-            st.markdown(result["final"])
-
-            st.markdown("---")
-            st.subheader("📊 Grading Rubric")
-            st.markdown(result["rubric"])
-
-            st.markdown("---")
-
-            st.markdown("---")
-            st.subheader("💻 Starter Code")
-            st.code(result["starter_code"], language="python")
-
-            st.markdown("---")
-
-            # Download button
             download_content = f"""# Assignment: {topic} (Week {week})
 Difficulty: {difficulty}
+Format: {assignment_format}
 
 ## Assignment
 {result["final"]}
@@ -97,6 +98,8 @@ Difficulty: {difficulty}
 {result["starter_code"]}
 ```
 """
+
+            st.markdown("---")
             st.download_button(
                 label="⬇️ Download Assignment as Markdown",
                 data=download_content,
@@ -104,15 +107,30 @@ Difficulty: {difficulty}
                 mime="text/markdown"
             )
 
-            st.markdown("---")
-            with st.expander("🔍 View AI Reflection Process (Draft → Critique → Final)"):
-                st.markdown("**📝 Original Draft:**")
+            assignment_tab, rubric_tab, starter_tab, trace_tab = st.tabs([
+                "📋 Assignment",
+                "📊 Rubric",
+                "💻 Starter Code",
+                "🔍 Review Trace"
+            ])
+
+            with assignment_tab:
+                st.markdown(result["final"])
+
+            with rubric_tab:
+                st.markdown(result["rubric"])
+
+            with starter_tab:
+                st.code(result["starter_code"], language="python")
+
+            with trace_tab:
+                st.markdown("**📝 Original Draft**")
                 st.markdown(result["draft"])
                 st.markdown("---")
-                st.markdown("**🔎 Professor Critique:**")
+                st.markdown("**🔎 Professor Critique**")
                 st.warning(result["critique"])
                 st.markdown("---")
-                st.markdown("**📚 Syllabus Context Used:**")
+                st.markdown("**📚 Syllabus Context Used**")
                 st.info(result["syllabus_context"])
         else:
             st.warning("Please enter a topic.")
@@ -274,5 +292,133 @@ with tab4:
         st.error(f"Could not load analytics: {e}")
 
 with tab5:
-    st.header("⚖️ AI Ethics & Limitations")
-    st.info("🚧 Coming soon — Hallucination risk estimator and responsible AI guidelines")
+    from backend.autodev.orchestrate import run_autodev, AGENT_ORDER
+    from backend.autodev.graph_component import build_graph_html
+    import streamlit.components.v1 as components
+
+    st.header("🤖 AutoDev Agent")
+    st.write("Describe any software idea in plain English. 7 AI agents will autonomously plan, build, test, secure, and deploy it.")
+
+    st.markdown("---")
+
+    # Example ideas
+    st.caption("💡 Try: *\"A CLI todo app with JSON persistence\"* or *\"A REST API for a book library\"* or *\"A Slack bot that summarizes daily standups\"*")
+
+    idea = st.text_area(
+        "Your idea:",
+        placeholder="A CLI tool that monitors a folder and alerts when new files appear",
+        height=80,
+    )
+
+    col_run, col_clear = st.columns([1, 5])
+    run_btn = col_run.button("🚀 Build It", type="primary")
+
+    if run_btn:
+        if not idea.strip():
+            st.warning("Please describe your idea first.")
+        else:
+            st.markdown("---")
+            st.subheader("🔄 Live Agent Workflow")
+
+            # Initialize all agents as waiting
+            agent_statuses = {a: "waiting" for a in AGENT_ORDER}
+            graph_placeholder = st.empty()
+
+            def render_graph():
+                html = build_graph_html(agent_statuses)
+                graph_placeholder.empty()
+                with graph_placeholder:
+                    components.html(html, height=590, scrolling=False)
+
+            render_graph()
+
+            # Observability sidebar metrics
+            st.markdown("---")
+            st.subheader("📡 Observability")
+            obs_cols = st.columns(len(AGENT_ORDER))
+            obs_placeholders = {a: obs_cols[i].empty() for i, a in enumerate(AGENT_ORDER)}
+
+            for name in AGENT_ORDER:
+                obs_placeholders[name].metric(name, "—", delta=None)
+
+            # Status text log
+            log_placeholder = st.empty()
+            log_lines = []
+
+            def on_update(agent_name, status, snippet):
+                agent_statuses[agent_name] = status
+                render_graph()
+                icon = {"running": "🔵", "done": "✅", "failed": "❌"}.get(status, "⚪")
+                log_lines.append(f"{icon} **{agent_name}** — {status}")
+                log_placeholder.markdown("\n\n".join(log_lines))
+
+            # Run the pipeline
+            pipeline = run_autodev(idea, on_update=on_update)
+
+            # Update obs metrics with final data
+            for agent_name in AGENT_ORDER:
+                r = pipeline["results"].get(agent_name)
+                if r:
+                    icon = "✅" if r.status == "done" else "❌"
+                    obs_placeholders[agent_name].metric(
+                        f"{icon} {agent_name}",
+                        f"{r.tokens} tok",
+                        delta=f"{r.duration}s",
+                    )
+
+            st.markdown("---")
+            # Summary banner
+            if pipeline["success"]:
+                st.success(f"✅ All {pipeline['total_agents']} agents completed — {pipeline['total_tokens']} tokens — {pipeline['total_duration']}s total")
+            else:
+                st.warning(f"⚠️ {pipeline['done_count']}/{pipeline['total_agents']} agents succeeded")
+
+            st.markdown("---")
+
+            # Tabbed output per agent
+            result_tabs = st.tabs([f"{a}" for a in AGENT_ORDER])
+            tab_icons = {
+                "Orchestrator": "🧠",
+                "Architect":    "🏗️",
+                "Coder":        "💻",
+                "Tester":       "🧪",
+                "Security":     "🔒",
+                "Git Agent":    "📦",
+                "Deploy Agent": "🚀",
+            }
+            for i, agent_name in enumerate(AGENT_ORDER):
+                with result_tabs[i]:
+                    r = pipeline["results"].get(agent_name)
+                    if not r:
+                        st.error("Agent did not run.")
+                        continue
+                    icon = tab_icons.get(agent_name, "")
+                    st.markdown(f"### {icon} {agent_name}")
+                    col_m1, col_m2, col_m3 = st.columns(3)
+                    col_m1.metric("Status", r.status.upper())
+                    col_m2.metric("Tokens", r.tokens)
+                    col_m3.metric("Latency", f"{r.duration}s")
+
+                    if r.status == "done":
+                        if agent_name in ("Coder", "Tester", "Git Agent", "Deploy Agent"):
+                            st.code(r.output, language="python" if agent_name in ("Coder", "Tester") else "yaml")
+                        else:
+                            st.markdown(r.output)
+                    else:
+                        st.error(f"Error: {r.error}")
+
+                    with st.expander("🔍 Prompt sent to this agent"):
+                        st.text(r.prompt or "(not captured)")
+
+            # Download full report
+            st.markdown("---")
+            full_report = f"# AutoDev Report — {idea[:60]}\n\n"
+            for agent_name in AGENT_ORDER:
+                r = pipeline["results"].get(agent_name)
+                full_report += f"## {agent_name}\n\n{r.output if r else 'Failed'}\n\n---\n\n"
+            st.download_button(
+                "⬇️ Download Full Report",
+                data=full_report,
+                file_name="autodev_report.md",
+                mime="text/markdown",
+            )

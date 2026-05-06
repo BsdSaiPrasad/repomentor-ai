@@ -30,12 +30,12 @@ Rubric:
 - Documentation and code quality (25%)
 """
 
-def generate_assignment(topic: str, week: int, difficulty: str) -> dict:
+def generate_assignment(topic: str, week: int, difficulty: str, assignment_format: str = "Lab") -> dict:
     """
     Generate an assignment using few-shot prompting and reflection loop.
 
     Example:
-        result = generate_assignment("Prompt Engineering", 3, "Intermediate")
+        result = generate_assignment("Prompt Engineering", 3, "Intermediate", "Notebook")
         result["final"]    # polished final assignment
         result["rubric"]   # grading rubric
         result["draft"]    # original draft
@@ -56,9 +56,23 @@ Now create a new assignment strictly aligned with the course syllabus above:
 Topic: {topic}
 Week: {week}
 Difficulty: {difficulty}
+Assignment Format: {assignment_format}
 
-Write a clear, complete, practical assignment description for CMSC389A students.
-Include: objective, description, deliverables."""
+Write a concise, high-quality assignment handout for CMSC389A students.
+Use an instructor voice, not a textbook voice.
+Make the work feel realistic, practical, and scoped for one course assignment.
+
+Use exactly these sections:
+Title
+Why This Matters
+Learning Goals
+Student Task
+Deliverables
+Constraints
+Submission Checklist
+Estimated Effort
+
+Keep it specific. Avoid filler, repetition, and generic AI phrasing."""
 
     draft_response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
@@ -69,7 +83,7 @@ Include: objective, description, deliverables."""
 
     # Step 2: Critique the draft
     critique_prompt = f"""You are a senior professor reviewing this assignment draft for CMSC389A.
-Critique it specifically for: clarity, appropriate difficulty level, alignment with learning objectives, and practicality.
+Critique it specifically for: clarity, appropriate difficulty level, alignment with learning objectives, practicality, and whether it sounds like a real course handout.
 Be specific and concise about what needs improvement.
 
 Assignment Draft:
@@ -86,7 +100,18 @@ Critique:"""
 
     # Step 3: Revise based on critique
     revise_prompt = f"""Improve this assignment based on the critique below.
-Return only the improved assignment. Make it complete and well structured.
+Return only the improved assignment.
+Keep it tighter, clearer, and more polished than the draft.
+Do not make it longer unless the critique requires it.
+Preserve the exact section structure below:
+Title
+Why This Matters
+Learning Goals
+Student Task
+Deliverables
+Constraints
+Submission Checklist
+Estimated Effort
 
 Original Draft:
 {draft}
@@ -105,7 +130,11 @@ Improved Assignment:"""
 
     # Step 4: Generate rubric
     rubric_prompt = f"""Create a grading rubric for this assignment with exactly 5 criteria, each worth 20%.
-Each criterion must be specific and measurable. Format clearly.
+Each criterion must be specific, measurable, and directly tied to the deliverables.
+Format it as:
+- Criterion name
+- What excellent work includes
+- Common misses
 
 Assignment:
 {final}
@@ -120,12 +149,17 @@ Rubric:"""
     rubric = rubric_response.choices[0].message.content
 
     # Step 5: Generate starter code
-    starter_prompt = f"""Generate a Python starter code template for this assignment.
-Include:
-- Necessary imports
-- Empty functions with docstrings explaining what students must implement
-- TODO comments guiding students
-- A main block to run the code
+    starter_prompt = f"""Generate starter material for this assignment.
+If Python starter code is appropriate, return a minimal runnable Python template.
+If code is not appropriate for this assignment format, return a short note saying "No starter code needed" and explain why in one sentence.
+
+If you do generate Python starter code:
+- include only the imports that are actually needed
+- keep it minimal and realistic
+- match the deliverables in the assignment
+- include TODO markers only where they help
+- avoid generic placeholder scaffolding and overly long docstrings
+- include a tiny example entry point when useful
 
 Assignment:
 {final}
@@ -148,5 +182,6 @@ Python Starter Code:"""
         "topic": topic,
         "week": week,
         "difficulty": difficulty,
+        "assignment_format": assignment_format,
         "syllabus_context": syllabus_context
     }
