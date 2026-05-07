@@ -70,12 +70,24 @@ with tab2:
         key="assignment_format"
     )
 
+    provided_context = ""
+    if assignment_format == "Code Review":
+        provided_context = st.text_area(
+            "Provided Code Context",
+            placeholder="Paste the repo URL, repo path, file list, or a short description of the code students will review.",
+            height=100
+        )
+        st.caption("Code Review assignments require concrete code context. Without it, the generator will refuse to invent one.")
+
     if st.button("Generate Assignment"):
         if topic:
+            if assignment_format == "Code Review" and not provided_context.strip():
+                st.warning("Add provided code context before generating a Code Review assignment.")
+                st.stop()
             with st.spinner("Step 1: Retrieving syllabus context..."):
                 pass
             with st.spinner("Step 2: Generating draft → critiquing → revising..."):
-                result = generate_assignment(topic, week, difficulty, assignment_format)
+                result = generate_assignment(topic, week, difficulty, assignment_format, provided_context)
 
             st.success("Assignment pack generated successfully.")
             st.caption(
@@ -93,10 +105,19 @@ Format: {assignment_format}
 ## Grading Rubric
 {result["rubric"]}
 
-## Starter Code
-```python
+## Starter Material
 {result["starter_code"]}
-```
+
+## Review Trace
+
+### Original Draft
+{result["draft"]}
+
+### Professor Critique
+{result["critique"]}
+
+### Student Doubts
+{result["student_doubts"]}
 """
 
             st.markdown("---")
@@ -121,7 +142,11 @@ Format: {assignment_format}
                 st.markdown(result["rubric"])
 
             with starter_tab:
-                st.code(result["starter_code"], language="python")
+                starter_material = result["starter_code"].strip()
+                if starter_material.startswith("No starter code needed"):
+                    st.info(starter_material)
+                else:
+                    st.code(result["starter_code"], language="python")
 
             with trace_tab:
                 st.markdown("**📝 Original Draft**")
@@ -129,6 +154,9 @@ Format: {assignment_format}
                 st.markdown("---")
                 st.markdown("**🔎 Professor Critique**")
                 st.warning(result["critique"])
+                st.markdown("---")
+                st.markdown("**🙋 Student Doubts**")
+                st.warning(result["student_doubts"])
                 st.markdown("---")
                 st.markdown("**📚 Syllabus Context Used**")
                 st.info(result["syllabus_context"])
