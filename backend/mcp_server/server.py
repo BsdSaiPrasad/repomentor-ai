@@ -1,7 +1,5 @@
 import json
 import sys
-from backend.services.repo_analyzer import analyze_repo
-from backend.services.course_assistant import ask_course_assistant
 from backend.db.connection import get_connection
 from sqlalchemy import text
 
@@ -10,6 +8,7 @@ def handle_tool_call(tool_name: str, arguments: dict) -> str:
     if tool_name == "analyze_repo":
         repo_path = arguments.get("repo_path", "")
         try:
+            from backend.services.repo_analyzer import analyze_repo
             report = analyze_repo(repo_path)
             return json.dumps({
                 "overall_score": report["overall_score"],
@@ -18,24 +17,33 @@ def handle_tool_call(tool_name: str, arguments: dict) -> str:
             })
         except ValueError as e:
             return json.dumps({"error": str(e)})
+        except Exception as e:
+            return json.dumps({"error": f"analyze_repo failed: {str(e)}"})
 
     elif tool_name == "get_review_history":
-        limit = arguments.get("limit", 5)
-        with get_connection() as conn:
-            rows = conn.execute(
-                text("SELECT repo_path, overall_score, grade, created_at FROM repo_reviews ORDER BY created_at DESC LIMIT :limit"),
-                {"limit": limit}
-            ).fetchall()
-        history = [
-            {"repo": r[0], "score": r[1], "grade": r[2], "at": str(r[3])}
-            for r in rows
-        ]
-        return json.dumps(history)
+        try:
+            limit = arguments.get("limit", 5)
+            with get_connection() as conn:
+                rows = conn.execute(
+                    text("SELECT repo_path, overall_score, grade, created_at FROM repo_reviews ORDER BY created_at DESC LIMIT :limit"),
+                    {"limit": limit}
+                ).fetchall()
+            history = [
+                {"repo": r[0], "score": r[1], "grade": r[2], "at": str(r[3])}
+                for r in rows
+            ]
+            return json.dumps(history)
+        except Exception as e:
+            return json.dumps({"error": f"get_review_history failed: {str(e)}"})
 
     elif tool_name == "ask_course_assistant":
-        question = arguments.get("question", "")
-        result = ask_course_assistant(question)
-        return json.dumps({"answer": result["answer"]})
+        try:
+            from backend.services.course_assistant import ask_course_assistant
+            question = arguments.get("question", "")
+            result = ask_course_assistant(question)
+            return json.dumps({"answer": result["answer"]})
+        except Exception as e:
+            return json.dumps({"error": f"ask_course_assistant failed: {str(e)}"})
 
     else:
         return json.dumps({"error": f"Unknown tool: {tool_name}"})

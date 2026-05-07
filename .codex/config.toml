@@ -1,0 +1,10 @@
+[mcp_servers.repomentor]
+command = "python3"
+args = ["-m", "backend.mcp_server.server"]
+cwd = "/Users/saiprasad/repomentor-ai"
+enabled = true
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+
+[mcp_servers.repomentor.tools.analyze_repo]
+approval_mode = "approve"

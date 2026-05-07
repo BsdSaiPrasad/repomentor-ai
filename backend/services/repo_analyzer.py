@@ -3,11 +3,13 @@ import subprocess
 import tempfile
 import shutil
 import os
+import sys
 import time
 from backend.agents.code_review_agent import CodeReviewAgent
 from backend.agents.security_agent import SecurityAgent
 from backend.agents.documentation_agent import DocumentationAgent
 from backend.agents.synthesizer_agent import SynthesizerAgent
+from backend.agents.base_agent import AgentResult
 from backend.db.connection import save_review
 
 async def run_agent_async(agent, repo_path: str, status_callback=None):
@@ -17,7 +19,29 @@ async def run_agent_async(agent, repo_path: str, status_callback=None):
     """
     loop = asyncio.get_event_loop()
     start = time.time()
-    result = await loop.run_in_executor(None, agent.run, repo_path)
+    try:
+        result = await asyncio.wait_for(
+            loop.run_in_executor(None, agent.run, repo_path),
+            timeout=20
+        )
+    except Exception as e:
+        duration = round(time.time() - start, 1)
+        result = AgentResult(
+            agent_name=agent.name,
+            score=0.0,
+            summary=f"{agent.name} could not complete.",
+            details=str(e),
+            issues=[{
+                "severity": "Potential",
+                "location": "Agent runtime",
+                "issue": f"{agent.name} failed during analysis.",
+                "fix": "Retry the analysis or check the LLM/API connectivity and agent runtime logs.",
+            }],
+            duration=duration,
+        )
+        if status_callback:
+            status_callback(agent.name, result.score, duration)
+        return result
     duration = round(time.time() - start, 1)
     result.duration = duration
     if status_callback:
@@ -85,6 +109,6 @@ def analyze_repo(repo_path: str, status_callback=None) -> dict:
     try:
         save_review(repo_path, result["overall_score"], result["grade"], result["breakdown"])
     except Exception as e:
-        print(f"[DB] Could not save review: {e}")
+        print(f"[DB] Could not save review: {e}", file=sys.stderr)
 
     return result
