@@ -25,7 +25,13 @@ class SynthesizerAgent:
         all_issues = []
         for result in results:
             for issue in result.issues:
-                all_issues.append(f"[{result.agent_name}] {issue}")
+                all_issues.append({
+                    "agent": result.agent_name,
+                    "severity": issue.get("severity", "Medium"),
+                    "location": issue.get("location", "Not specified"),
+                    "issue": issue.get("issue", ""),
+                    "fix": issue.get("fix", ""),
+                })
 
         # Build per-agent breakdown
         breakdown = []

@@ -28,8 +28,10 @@ Code to review:
 Respond in this exact format:
 SCORE: [0-100]
 SUMMARY: [one sentence]
-ISSUES: [bullet points of specific issues found]
-DETAILS: [detailed explanation]"""
+ISSUES:
+- Severity: [High/Medium/Low/Potential] | Location: [file path or function name] | Issue: [specific issue] | Fix: [short actionable fix]
+[include at most 3 issues, only the most important ones]
+DETAILS: [two short sentences max]"""
 
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
@@ -55,38 +57,6 @@ DETAILS: [detailed explanation]"""
                 if file.endswith(".py"):
                     filepath = os.path.join(root, file)
                     with open(filepath, "r") as f:
-                        code += f"\n# File: {file}\n{f.read()}"
+                        relpath = os.path.relpath(filepath, repo_path)
+                        code += f"\n# File: {relpath}\n{f.read()}"
         return code[:3000]
-
-    def _extract_score(self, text: str) -> float:
-        for line in text.split("\n"):
-            if line.startswith("SCORE:"):
-                try:
-                    return float(line.replace("SCORE:", "").strip())
-                except:
-                    return 50.0
-        return 50.0
-
-    def _extract_section(self, text: str, section: str) -> str:
-        for line in text.split("\n"):
-            if line.startswith(f"{section}:"):
-                return line.replace(f"{section}:", "").strip()
-        return ""
-
-    def _extract_issues(self, text: str) -> list:
-        issues = []
-        in_issues = False
-        for line in text.split("\n"):
-            if line.startswith("ISSUES:"):
-                in_issues = True
-                first = line.replace("ISSUES:", "").strip()
-                if first:
-                    issues.append(first)
-                continue
-            if in_issues and line.startswith("DETAILS:"):
-                break
-            if in_issues and line.strip():
-                cleaned = line.strip()
-                if cleaned[0] in ("-", "*", "•") or (cleaned[0].isdigit() and "." in cleaned[:3]):
-                    issues.append(cleaned)
-        return issues
