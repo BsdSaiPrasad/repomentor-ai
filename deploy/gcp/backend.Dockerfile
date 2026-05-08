@@ -18,7 +18,8 @@ COPY scripts ./scripts
 
 COPY deploy/gcp/backend-start.sh /app/backend-start.sh
 RUN chmod +x /app/backend-start.sh
-RUN python /app/scripts/ingest_syllabus.py
+ENV RAG_PROVIDER=vertex
+ENV GOOGLE_CLOUD_LOCATION=us-central1
 
 EXPOSE 8080
 

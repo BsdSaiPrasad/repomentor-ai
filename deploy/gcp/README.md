@@ -10,7 +10,8 @@ For the quickest safe rollout, use two Cloud Run services:
 1. `repomentor-backend`
    - FastAPI app from `backend/main.py`
    - Handles Course Assistant, Assignment Builder, Repo Reviewer, MCP tools
-   - Rebuilds the syllabus Chroma index on startup if `chroma_db/` is missing
+   - Rebuilds the syllabus retrieval index on backend startup in GCP
+   - Uses Vertex AI embeddings in GCP
 
 2. `repomentor-frontend`
    - Next.js app from `frontend/`
@@ -19,7 +20,7 @@ For the quickest safe rollout, use two Cloud Run services:
 ### Why we are doing it this way
 
 - It does not change the local developer flow
-- It works with the current code before a later Vertex AI migration
+- It keeps local development unchanged while using Vertex AI in GCP
 - Cloud Run gives you a public HTTPS URL without buying a domain
 
 ### Important current reality
@@ -33,8 +34,11 @@ The local app uses:
 For the first GCP deploy:
 
 - `GROQ_API_KEY` is required
+- `GOOGLE_CLOUD_PROJECT` is required
 - Postgres is optional
-- Chroma will be rebuilt from `docs/syllabus.txt` and `docs/schedule.txt`
+- Vertex AI embeddings are used for syllabus retrieval
+- the retrieval index is rebuilt from `docs/syllabus.txt` and `docs/schedule.txt`
+- retrieval is still kept local to the deployed backend image for safety and simplicity
 
 ### What this first GCP deployment gives you
 
@@ -45,7 +49,6 @@ For the first GCP deploy:
 
 ### What this does NOT do yet
 
-- Vertex AI embeddings / vector search
 - BigQuery analytics
 - custom domain
 
@@ -64,13 +67,13 @@ Optional later:
 
 - Cloud SQL
 - BigQuery
-- Vertex AI
 
 ## Backend environment variables
 
 Required:
 
 - `GROQ_API_KEY`
+- `GOOGLE_CLOUD_PROJECT`
 
 Optional:
 
@@ -102,7 +105,7 @@ gcloud run deploy repomentor-backend \
   --dockerfile deploy/gcp/backend.Dockerfile \
   --region us-central1 \
   --allow-unauthenticated \
-  --set-env-vars PORT=8080 \
+  --set-env-vars PORT=8080,GOOGLE_CLOUD_PROJECT=project-f63e5b1f-dfa9-4376-b4c,GOOGLE_CLOUD_LOCATION=us-central1 \
   --set-secrets GROQ_API_KEY=GROQ_API_KEY:latest
 ```
 

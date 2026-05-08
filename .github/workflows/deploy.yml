@@ -60,6 +60,7 @@ jobs:
             --memory 4Gi \
             --cpu 2 \
             --timeout 300 \
+            --set-env-vars GOOGLE_CLOUD_PROJECT=${{ env.GCP_PROJECT_ID }},GOOGLE_CLOUD_LOCATION=${{ env.GCP_REGION }} \
             --set-secrets GROQ_API_KEY=GROQ_API_KEY:latest
 
       - name: Capture backend URL
