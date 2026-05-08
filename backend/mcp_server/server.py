@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 from backend.db.connection import get_connection
 from sqlalchemy import text
@@ -22,6 +23,15 @@ def handle_tool_call(tool_name: str, arguments: dict) -> str:
 
     elif tool_name == "get_review_history":
         try:
+            if not os.getenv("DATABASE_URL"):
+                return json.dumps(
+                    {
+                        "error": (
+                            "Review history is not configured in this deployment yet. "
+                            "Set up a hosted Postgres/Cloud SQL database first."
+                        )
+                    }
+                )
             limit = arguments.get("limit", 5)
             with get_connection() as conn:
                 rows = conn.execute(
@@ -49,7 +59,7 @@ def handle_tool_call(tool_name: str, arguments: dict) -> str:
         return json.dumps({"error": f"Unknown tool: {tool_name}"})
 
 
-TOOLS = [
+ALL_TOOLS = [
     {
         "name": "analyze_repo",
         "description": "Analyze a student's GitHub repo or local path for code quality, security, and documentation.",
@@ -95,6 +105,13 @@ TOOLS = [
 ]
 
 
+def get_tools() -> list[dict]:
+    if os.getenv("DATABASE_URL"):
+        return ALL_TOOLS
+
+    return [tool for tool in ALL_TOOLS if tool["name"] != "get_review_history"]
+
+
 def main():
     for line in sys.stdin:
         line = line.strip()
@@ -128,7 +145,7 @@ def main():
             response = {
                 "jsonrpc": "2.0",
                 "id": msg_id,
-                "result": {"tools": TOOLS}
+                "result": {"tools": get_tools()}
             }
 
         elif method == "tools/call":

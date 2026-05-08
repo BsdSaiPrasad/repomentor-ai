@@ -114,8 +114,8 @@ def repo_review(payload: RepoReviewRequest):
 @app.get("/api/v1/mcp-tools")
 def list_mcp_tools():
     try:
-        from backend.mcp_server.server import TOOLS
-        return {"tools": TOOLS}
+        from backend.mcp_server.server import get_tools
+        return {"tools": get_tools()}
     except Exception as exc:
         return JSONResponse(
             {"error": f"Could not load MCP tools: {exc}"},

@@ -28,6 +28,24 @@ def _is_supported_topic(topic: str, syllabus_context: str) -> bool:
     return bool(topic_words) and all(word in lowered_context for word in topic_words)
 
 
+def _needs_starter_code(topic: str, assignment_text: str) -> bool:
+    lowered = f"{topic}\n{assignment_text}".lower()
+    starter_signals = [
+        "mcp",
+        "build",
+        "implement",
+        "api",
+        "backend",
+        "client",
+        "server",
+        "code",
+        "python",
+        "fastapi",
+        "repository",
+    ]
+    return any(signal in lowered for signal in starter_signals)
+
+
 def generate_assignment(topic: str, difficulty: str, refinement_notes: str = "") -> dict:
     syllabus_chunks = retrieve(topic, k=4)
     syllabus_context = "\n".join(syllabus_chunks)
@@ -108,9 +126,41 @@ Rubric:"""
     )
     rubric = rubric_response.choices[0].message.content
 
-    starter_code = (
-        "No starter code needed. This assignment should be understandable and doable from the handout alone."
-    )
+    if _needs_starter_code(topic, final):
+        starter_prompt = f"""You are helping a professor prepare lightweight starter material for a CMSC389A assignment.
+
+Create a small, practical starter scaffold for the assignment below.
+
+Rules:
+- Keep it minimal and beginner-friendly.
+- Use only a few files.
+- Include short code snippets, not a full finished solution.
+- Prefer Python when the assignment is implementation-oriented.
+- Include a suggested file structure.
+- Include brief notes on what students still need to implement.
+- Do not solve the assignment completely.
+- If the assignment does not truly need code, say so clearly.
+
+Assignment:
+{final}
+
+Return the starter material in markdown with these sections:
+Starter Files
+Code Skeleton
+What Students Must Complete
+"""
+
+        starter_response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{"role": "user", "content": starter_prompt}],
+            max_tokens=700,
+        )
+        starter_code = starter_response.choices[0].message.content
+    else:
+        starter_code = (
+            "No starter code needed. This assignment should be understandable and "
+            "doable from the handout alone."
+        )
 
     return {
         "draft": draft,
