@@ -169,11 +169,11 @@ This repo now includes:
 
 In your GitHub repo settings, add:
 
-- `GCP_SA_KEY`
-  - JSON key for a Google Cloud service account that can:
-    - deploy Cloud Run
-    - push to Artifact Registry
-    - use service accounts
+- `GCP_WORKLOAD_IDENTITY_PROVIDER`
+  - full Workload Identity Provider resource name from GCP
+- `GCP_SERVICE_ACCOUNT_EMAIL`
+  - deployer service account email, for example:
+    `github-deployer@project-f63e5b1f-dfa9-4376-b4c.iam.gserviceaccount.com`
 - `AUTH_SECRET`
   - a long random string for the frontend auth/session secret
 
@@ -184,6 +184,10 @@ The deployer service account should have:
 - `Cloud Run Admin`
 - `Artifact Registry Writer`
 - `Service Account User`
+
+The Workload Identity Pool principal for your GitHub repo should have:
+
+- `Workload Identity User` on the deployer service account
 
 If you later move more runtime secrets into Secret Manager, also add:
 
