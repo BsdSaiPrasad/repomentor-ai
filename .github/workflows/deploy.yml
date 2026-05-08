@@ -67,23 +67,10 @@ jobs:
         run: |
           echo "url=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} --region ${{ env.GCP_REGION }} --format='value(status.url)')" >> "$GITHUB_OUTPUT"
 
-      - name: Build frontend image
-        run: |
-          docker build \
-            -f deploy/gcp/frontend.Dockerfile \
-            -t ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
-            -t ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_SERVICE }}:latest \
-            .
-
-      - name: Push frontend image
-        run: |
-          docker push ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }}
-          docker push ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_SERVICE }}:latest
-
       - name: Deploy frontend
         run: |
           gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
-            --image ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
+            --source frontend \
             --region ${{ env.GCP_REGION }} \
             --allow-unauthenticated \
             --set-env-vars REPOMENTOR_API_BASE_URL=${{ steps.backend-url.outputs.url }},AUTH_SECRET=${{ secrets.AUTH_SECRET }}

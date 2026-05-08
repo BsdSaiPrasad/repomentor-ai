@@ -164,6 +164,8 @@ This repo now includes:
   - runs lightweight checks on pull requests and non-`main` pushes
 - `.github/workflows/deploy.yml`
   - deploys backend + frontend to Cloud Run on every push to `main`
+  - backend uses a Docker image deploy
+  - frontend uses a source deploy, matching the manual path that already worked
 
 ### GitHub secrets to add
 
