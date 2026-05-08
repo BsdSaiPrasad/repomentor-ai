@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbo",
     "build": "tsx lib/db/migrate && next build",
-    "start": "next start",
+    "start": "sh -c 'next start -H 0.0.0.0 -p ${PORT:-8080}'",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "db:generate": "drizzle-kit generate",
