@@ -41,14 +41,17 @@ def _vertex_embed_texts(
     embeddings: list[list[float]] = []
 
     for index, chunk in enumerate(chunks):
+        config_kwargs = {
+            "task_type": task_type,
+            "output_dimensionality": 768,
+        }
+        if task_type == "RETRIEVAL_DOCUMENT":
+            config_kwargs["title"] = f"{title_prefix} {index + 1}"
+
         response = client.models.embed_content(
             model="gemini-embedding-001",
             contents=chunk,
-            config=EmbedContentConfig(
-                task_type=task_type,
-                output_dimensionality=768,
-                title=f"{title_prefix} {index + 1}",
-            ),
+            config=EmbedContentConfig(**config_kwargs),
         )
         embeddings.append(response.embeddings[0].values)
 
