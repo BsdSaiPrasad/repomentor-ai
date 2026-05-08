@@ -50,7 +50,7 @@ async def run_agent_async(agent, repo_path: str, status_callback=None):
 
 async def analyze_repo_async(repo_path: str, status_callback=None) -> dict:
     """
-    Run all 3 agents concurrently using asyncio.gather().
+    Run agents in a controlled sequence to avoid bursting the LLM rate limit.
     """
     agents = [
         CodeReviewAgent(),
@@ -58,9 +58,9 @@ async def analyze_repo_async(repo_path: str, status_callback=None) -> dict:
         DocumentationAgent()
     ]
 
-    results = await asyncio.gather(*[
-        run_agent_async(agent, repo_path, status_callback) for agent in agents
-    ])
+    results = []
+    for agent in agents:
+        results.append(await run_agent_async(agent, repo_path, status_callback))
 
     synthesizer = SynthesizerAgent()
     final_report = synthesizer.synthesize(list(results))

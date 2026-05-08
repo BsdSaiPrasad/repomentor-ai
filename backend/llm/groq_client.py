@@ -1,4 +1,5 @@
 import os
+import time
 from typing import Any
 
 import requests
@@ -26,17 +27,50 @@ def groq_chat_completion(
     if temperature is not None:
         payload["temperature"] = temperature
 
-    response = requests.post(
-        GROQ_API_URL,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json=payload,
-        timeout=60,
-    )
-    response.raise_for_status()
-    return response.json()
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            response = requests.post(
+                GROQ_API_URL,
+                headers=headers,
+                json=payload,
+                timeout=60,
+            )
+            if response.status_code == 429 and attempt < 2:
+                retry_after = response.headers.get("Retry-After")
+                delay = float(retry_after) if retry_after else float(2 ** (attempt + 1))
+                time.sleep(delay)
+                continue
+            response.raise_for_status()
+            return response.json()
+        except requests.HTTPError as exc:
+            status_code = exc.response.status_code if exc.response is not None else None
+            if status_code in {429, 500, 502, 503, 504} and attempt < 2:
+                retry_after = (
+                    exc.response.headers.get("Retry-After")
+                    if exc.response is not None
+                    else None
+                )
+                delay = float(retry_after) if retry_after else float(2 ** (attempt + 1))
+                time.sleep(delay)
+                last_error = exc
+                continue
+            raise
+        except requests.RequestException as exc:
+            if attempt < 2:
+                time.sleep(float(2 ** (attempt + 1)))
+                last_error = exc
+                continue
+            raise
+
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("Groq request failed without a response.")
 
 
 def extract_groq_text(response: dict[str, Any]) -> str:
