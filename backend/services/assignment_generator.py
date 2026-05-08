@@ -1,13 +1,11 @@
 import os
 
 from dotenv import load_dotenv
-from groq import Groq
+from backend.llm.groq_client import extract_groq_text, groq_chat_completion
 
 from backend.rag.retriever import retrieve
 
 load_dotenv()
-
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 def _extract_week(syllabus_context: str) -> int | None:
@@ -94,12 +92,12 @@ Estimated Effort
 
 Keep it specific, short, and directly usable by a professor. Avoid filler, repetition, and generic AI phrasing."""
 
-    draft_response = client.chat.completions.create(
+    draft_response = groq_chat_completion(
         model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": draft_prompt}],
         max_tokens=1024,
     )
-    draft = draft_response.choices[0].message.content
+    draft = extract_groq_text(draft_response)
 
     final = draft
     critique = "Stable mode: detailed critique step disabled to reduce latency and failure points."
@@ -119,12 +117,12 @@ Assignment:
 
 Rubric:"""
 
-    rubric_response = client.chat.completions.create(
+    rubric_response = groq_chat_completion(
         model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": rubric_prompt}],
         max_tokens=512,
     )
-    rubric = rubric_response.choices[0].message.content
+    rubric = extract_groq_text(rubric_response)
 
     if _needs_starter_code(topic, final):
         starter_prompt = f"""You are helping a professor prepare lightweight starter material for a CMSC389A assignment.
@@ -150,12 +148,12 @@ Code Skeleton
 What Students Must Complete
 """
 
-        starter_response = client.chat.completions.create(
+        starter_response = groq_chat_completion(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": starter_prompt}],
             max_tokens=700,
         )
-        starter_code = starter_response.choices[0].message.content
+        starter_code = extract_groq_text(starter_response)
     else:
         starter_code = (
             "No starter code needed. This assignment should be understandable and "

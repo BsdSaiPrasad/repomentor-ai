@@ -1,11 +1,9 @@
 import os
-from groq import Groq
 from dotenv import load_dotenv
+from backend.llm.groq_client import extract_groq_text, groq_chat_completion
 from backend.rag.retriever import retrieve
 
 load_dotenv()
-
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 def ask_course_assistant(question: str) -> dict:
@@ -24,14 +22,14 @@ Student Question: {question}
 
 Answer:"""
 
-    response = client.chat.completions.create(
+    response = groq_chat_completion(
         model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=512
+        max_tokens=512,
     )
 
     return {
-        "answer": response.choices[0].message.content,
+        "answer": extract_groq_text(response),
         "sources": chunks
     }
 
@@ -73,13 +71,13 @@ Conversation:
 
 Answer:"""
 
-    response = client.chat.completions.create(
+    response = groq_chat_completion(
         model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=512
+        max_tokens=512,
     )
 
     return {
-        "answer": response.choices[0].message.content,
+        "answer": extract_groq_text(response),
         "sources": chunks
     }

@@ -1,12 +1,10 @@
 import os
 import subprocess
-from groq import Groq
 from dotenv import load_dotenv
 from backend.agents.base_agent import BaseAgent, AgentResult
+from backend.llm.groq_client import extract_groq_text, groq_chat_completion
 
 load_dotenv()
-
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 class SecurityAgent(BaseAgent):
     """
@@ -49,13 +47,13 @@ ISSUES:
 [include at most 3 issues, only the most important ones; if unsure, use Potential]
 DETAILS: [two short sentences max]"""
 
-        response = client.chat.completions.create(
+        response = groq_chat_completion(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=512
+            max_tokens=512,
         )
 
-        text = response.choices[0].message.content
+        text = extract_groq_text(response)
         score = self._extract_score(text)
 
         return AgentResult(
