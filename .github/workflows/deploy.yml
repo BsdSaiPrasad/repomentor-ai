@@ -1,0 +1,87 @@
+name: Deploy to GCP
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  GCP_PROJECT_ID: project-f63e5b1f-dfa9-4376-b4c
+  GCP_REGION: us-central1
+  BACKEND_SERVICE: repomentor-backend
+  FRONTEND_SERVICE: repomentor-frontend
+  REGISTRY_HOST: us-central1-docker.pkg.dev
+  REPOSITORY: cloud-run-source-deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Configure Docker auth
+        run: gcloud auth configure-docker ${{ env.REGISTRY_HOST }} --quiet
+
+      - name: Build backend image
+        run: |
+          docker build \
+            -f deploy/gcp/backend.Dockerfile \
+            -t ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
+            -t ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_SERVICE }}:latest \
+            .
+
+      - name: Push backend image
+        run: |
+          docker push ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_SERVICE }}:latest
+
+      - name: Deploy backend
+        run: |
+          gcloud run deploy ${{ env.BACKEND_SERVICE }} \
+            --image ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
+            --region ${{ env.GCP_REGION }} \
+            --allow-unauthenticated \
+            --memory 4Gi \
+            --cpu 2 \
+            --timeout 300 \
+            --set-secrets GROQ_API_KEY=GROQ_API_KEY:latest
+
+      - name: Capture backend URL
+        id: backend-url
+        run: |
+          echo "url=$(gcloud run services describe ${{ env.BACKEND_SERVICE }} --region ${{ env.GCP_REGION }} --format='value(status.url)')" >> "$GITHUB_OUTPUT"
+
+      - name: Build frontend image
+        run: |
+          docker build \
+            -f deploy/gcp/frontend.Dockerfile \
+            -t ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
+            -t ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_SERVICE }}:latest \
+            .
+
+      - name: Push frontend image
+        run: |
+          docker push ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_SERVICE }}:latest
+
+      - name: Deploy frontend
+        run: |
+          gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
+            --image ${{ env.REGISTRY_HOST }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
+            --region ${{ env.GCP_REGION }} \
+            --allow-unauthenticated \
+            --set-env-vars REPOMENTOR_API_BASE_URL=${{ steps.backend-url.outputs.url }},AUTH_SECRET=${{ secrets.AUTH_SECRET }}

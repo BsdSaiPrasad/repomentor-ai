@@ -47,7 +47,6 @@ For the first GCP deploy:
 
 - Vertex AI embeddings / vector search
 - BigQuery analytics
-- CI/CD
 - custom domain
 
 Those are phase 2 improvements after the first working deploy.
@@ -156,3 +155,36 @@ After the first deploy works, the next clean upgrades are:
 2. Add Cloud SQL Postgres for app data
 3. Export review data into BigQuery for analytics
 4. Add GitHub Actions CI/CD for Cloud Run deploys
+
+## CI/CD
+
+This repo now includes:
+
+- `.github/workflows/ci.yml`
+  - runs lightweight checks on pull requests and non-`main` pushes
+- `.github/workflows/deploy.yml`
+  - deploys backend + frontend to Cloud Run on every push to `main`
+
+### GitHub secrets to add
+
+In your GitHub repo settings, add:
+
+- `GCP_SA_KEY`
+  - JSON key for a Google Cloud service account that can:
+    - deploy Cloud Run
+    - push to Artifact Registry
+    - use service accounts
+- `AUTH_SECRET`
+  - a long random string for the frontend auth/session secret
+
+### Recommended service account roles
+
+The deployer service account should have:
+
+- `Cloud Run Admin`
+- `Artifact Registry Writer`
+- `Service Account User`
+
+If you later move more runtime secrets into Secret Manager, also add:
+
+- `Secret Manager Secret Accessor`
