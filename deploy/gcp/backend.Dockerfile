@@ -15,6 +15,7 @@ COPY scripts ./scripts
 
 COPY deploy/gcp/backend-start.sh /app/backend-start.sh
 RUN chmod +x /app/backend-start.sh
+RUN python /app/scripts/ingest_syllabus.py
 
 EXPOSE 8080
 
