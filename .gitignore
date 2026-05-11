@@ -8,6 +8,8 @@ venv/
 
 # Environment variables (never push API keys)
 .env
+.env.*
+!.env.example
 
 # Database
 *.db
@@ -22,3 +24,10 @@ htmlcov/
 
 # Chroma vector database (local only)
 chroma_db/
+
+# Generated App Factory outputs
+generated_apps/**/node_modules/
+generated_apps/**/.next/
+generated_apps/**/.env
+generated_apps/**/.env.*
+generated_apps/**/npm-debug.log*

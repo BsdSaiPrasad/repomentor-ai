@@ -3,6 +3,7 @@
 import {
   BookOpenIcon,
   ClipboardListIcon,
+  FactoryIcon,
   MessageSquareIcon,
   PanelLeftIcon,
   PenSquareIcon,
@@ -38,6 +39,7 @@ export function AppSidebar() {
       label: "Assignment Builder",
     },
     { href: "/repo-reviewer", icon: SearchIcon, label: "Repo Reviewer" },
+    { href: "/app-factory", icon: FactoryIcon, label: "App Factory" },
     { href: "/developer-tools", icon: WrenchIcon, label: "Developer Tools" },
   ];
 

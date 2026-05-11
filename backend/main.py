@@ -57,6 +57,17 @@ class MCPToolCallRequest(BaseModel):
     arguments: dict = {}
 
 
+class AppFactoryApiRequest(BaseModel):
+    action: str
+    idea: str | None = None
+    session_id: str | None = None
+    approve_code_generation: bool = False
+    approve_deployment: bool = False
+    gcp_project_id: str | None = None
+    gcp_region: str | None = None
+    gcp_artifact_repository: str | None = None
+
+
 @app.post("/api/v1/course-assistant")
 def course_assistant(payload: CourseQuestionRequest):
     try:
@@ -138,5 +149,57 @@ def call_mcp_tool(payload: MCPToolCallRequest):
     except Exception as exc:
         return JSONResponse(
             {"error": f"MCP tool call failed: {exc}"},
+            status_code=500,
+        )
+
+
+@app.post("/api/v1/app-factory")
+def app_factory(payload: AppFactoryApiRequest):
+    try:
+        from backend.app_factory.orchestrator import (
+            deploy_app,
+            generate_code,
+            get_session,
+            plan_app,
+            start_scope,
+        )
+
+        if payload.action == "scope":
+            if not payload.idea or not payload.idea.strip():
+                return JSONResponse({"error": "App idea is required."}, status_code=400)
+            session = start_scope(payload.idea.strip())
+            return {"session": session.model_dump()}
+
+        if not payload.session_id:
+            return JSONResponse({"error": "session_id is required."}, status_code=400)
+
+        if payload.action == "plan":
+            return {"session": plan_app(payload.session_id).model_dump()}
+        if payload.action == "generate":
+            return {
+                "session": generate_code(
+                    payload.session_id,
+                    payload.approve_code_generation,
+                ).model_dump()
+            }
+        if payload.action == "deploy":
+            return {
+                "session": deploy_app(
+                    payload.session_id,
+                    payload.approve_deployment,
+                    project_id=payload.gcp_project_id,
+                    region=payload.gcp_region,
+                    repository=payload.gcp_artifact_repository,
+                ).model_dump()
+            }
+        if payload.action == "status":
+            return {"session": get_session(payload.session_id).model_dump()}
+
+        return JSONResponse({"error": "Unknown App Factory action."}, status_code=400)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    except Exception as exc:
+        return JSONResponse(
+            {"error": f"App Factory failed: {exc}"},
             status_code=500,
         )
